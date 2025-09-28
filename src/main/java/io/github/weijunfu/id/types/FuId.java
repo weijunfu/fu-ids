@@ -1,9 +1,13 @@
 package io.github.weijunfu.id.types;
 
 import io.github.weijunfu.id.util.FuIds;
+import io.github.weijunfu.id.util.StringUtil;
 
 import java.util.Objects;
 
+/**
+ *
+ */
 public class FuId {
 
   private final String value;
@@ -14,7 +18,7 @@ public class FuId {
 
   public Long getValue() {
 
-    if(Objects.isNull(value) || value.trim().length() == 0) {
+    if(Objects.isNull(value) || StringUtil.hasText(value)) {
       return null;
     }
 
