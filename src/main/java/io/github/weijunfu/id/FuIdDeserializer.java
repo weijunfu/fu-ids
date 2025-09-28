@@ -10,6 +10,9 @@ import io.github.weijunfu.id.util.StringUtil;
 import java.io.IOException;
 import java.util.Objects;
 
+/**
+ * Long 反序列化类
+ */
 public class FuIdDeserializer extends JsonDeserializer<Long> {
 
   @Override

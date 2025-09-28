@@ -8,11 +8,15 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
+/**
+ * 基于Hashids实现的工具类
+ */
 public class FuIds {
 
-  // the default instance
+  /**
+   * 定义FuIds实例
+   */
   private static final class DefaultInstanceHolder {
-
     private static final FuIds DEFAULT_INSTANCE = newInstance(new char[0]);
   }
 
@@ -105,25 +109,7 @@ public class FuIds {
   //-------------------------
 
   /**
-   * Returns the default instance of the algorithm which uses the following parameters:
-   * <table summary="Algorithm parametrization">
-   * <tr>
-   * <th>Parameter</th>
-   * <th>Value</th>
-   * </tr>
-   * <tr>
-   * <td><b>salt</b></td>
-   * <td>--</td>
-   * </tr>
-   * <tr>
-   * <td><b>alphabet</b></td>
-   * <td>abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890</td>
-   * </tr>
-   * <tr>
-   * <td><b>minLength</b></td>
-   * <td>--</td>
-   * </tr>
-   * </table>
+   * 暴露的FuIds实例
    *
    * @return the default algorithm instance
    */

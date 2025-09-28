@@ -6,7 +6,7 @@ import io.github.weijunfu.id.util.StringUtil;
 import java.util.Objects;
 
 /**
- *
+ * FuId 用于定义参数类型
  */
 public class FuId {
 

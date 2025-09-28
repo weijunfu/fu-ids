@@ -8,6 +8,9 @@ import io.github.weijunfu.id.util.FuIds;
 import java.io.IOException;
 import java.util.Objects;
 
+/**
+ * Long 序列化类
+ */
 public class FuIdSerializer extends JsonSerializer<Long> {
 
   @Override
