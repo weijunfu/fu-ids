@@ -18,7 +18,7 @@ public class FuId {
 
   public Long getValue() {
 
-    if(Objects.isNull(value) || StringUtil.hasText(value)) {
+    if(Objects.isNull(value) || !StringUtil.hasText(value)) {
       return null;
     }
 
