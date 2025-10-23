@@ -37,7 +37,9 @@ public class AppTest {
     void test() throws JsonProcessingException {
         Student student = new Student();
         student.setId(1234567L);
-        student.setName("test");
+        student.setName("ijunfu");
+        student.setIdSchool(987653L);
+
         System.out.println("student=" + student);
 
         JsonMapper mapper = new JsonMapper();
