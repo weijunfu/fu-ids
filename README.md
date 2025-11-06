@@ -34,6 +34,16 @@ public class Student implements Serializable {
 
   private String name;
 
+  // 数组、集合
+  // 3. @JsonContentLong 为组合式主注解，相当于同时使用了@JsonSerialize(contentUsing = FuIdSerializer.class)和 @JsonDeserialize(contentUsing =  FuIdDeserializer.class)
+  @JsonContentLong
+  private Long[] nums;
+
+  // Map<Long, ?>
+  // 4.@JsonKeyLong 为组合式注解，相当于同时使用了@JsonSerialize(keyUsing = FuIdKeySerializer.class)和@JsonDeserialize(keyUsing =  FuIdKeyDeserializer.class)
+  @JsonKeyLong
+  private Map<Long, String> others;
+
 }
 ```
 

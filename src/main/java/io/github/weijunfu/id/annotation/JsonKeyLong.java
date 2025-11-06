@@ -1,24 +1,20 @@
 package io.github.weijunfu.id.annotation;
 
-import com.fasterxml.jackson.annotation.JacksonAnnotation;
 import com.fasterxml.jackson.annotation.JacksonAnnotationsInside;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.github.weijunfu.id.FuIdDeserializer;
-import io.github.weijunfu.id.FuIdSerializer;
+import io.github.weijunfu.id.FuIdKeyDeserializer;
+import io.github.weijunfu.id.FuIdKeySerializer;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/**
- * 自定义整个字段的序列化逻辑
- */
 @Target({ ElementType.METHOD, ElementType.FIELD })
 @Retention(RetentionPolicy.RUNTIME)
 @JacksonAnnotationsInside
-@JsonSerialize(using = FuIdSerializer.class)
-@JsonDeserialize(using =  FuIdDeserializer.class)
-public @interface JsonLong {
+@JsonSerialize(keyUsing = FuIdKeySerializer.class)
+@JsonDeserialize(keyUsing =  FuIdKeyDeserializer.class)
+public @interface JsonKeyLong {
 }

@@ -8,6 +8,9 @@ import io.github.weijunfu.id.util.FuIds;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Unit test for simple App.
  */
@@ -45,6 +48,39 @@ public class AppTest {
         JsonMapper mapper = new JsonMapper();
         String json = mapper.writeValueAsString(student);
         System.out.println("to json: " + json);
+
+        Student student1 = mapper.readValue(json, Student.class);
+        System.out.println("to student: " + student1);
+        assert student1.getId().equals(student1.getId());
+    }
+
+    @Test
+    @DisplayName("集合 & 数组 & Map")
+    void testCollectionAndArray() throws JsonProcessingException {
+
+        Student student = new Student();
+        student.setId(1234567L);
+        student.setName("ijunfu");
+        student.setIdSchool(987653L);
+
+        Long[] arr = new Long[4];
+        arr[0] = 12345678L;
+        arr[1] = 987653L;
+        arr[2] = 12345679L;
+        arr[3] = 21234567L;
+        student.setNums(arr);
+
+        Map<Long, String> map = new HashMap<>();
+        map.put(12345678L, "Hello 1");
+        map.put(987653L, "Hello 2");
+        map.put(12345679L, "Hello 3");
+        map.put(21234567L, "Hello 4");
+        student.setOthers(map);
+
+        JsonMapper mapper = new JsonMapper();
+        String json = mapper.writeValueAsString(student);
+
+        System.out.println(json);
 
         Student student1 = mapper.readValue(json, Student.class);
         System.out.println("to student: " + student1);
