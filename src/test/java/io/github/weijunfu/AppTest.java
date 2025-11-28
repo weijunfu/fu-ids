@@ -143,6 +143,19 @@ public class AppTest {
     }
 
     @Test
+    @DisplayName("金额")
+    void testAmount2() throws JsonProcessingException {
+        String json = "{\"amount1\":\"0.244\",\"amount2\":null,\"amount3\":\"0.4844\",\"amount4\":\"0.4885\"}";
+
+        JsonMapper mapper = new JsonMapper();
+
+        // 添加此行来查看详细日志
+        mapper.enable(com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT);
+        Amount amount1 = mapper.readValue(json, Amount.class);
+        System.out.println(amount1.toString());
+    }
+
+    @Test
     void testSnowflake() {
         Snowflake snowflake = IdUtil.getSnowflake(1, 5);
 

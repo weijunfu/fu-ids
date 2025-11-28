@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.deser.ContextualDeserializer;
 import io.github.weijunfu.id.amount.annotation.JsonAmount;
 import io.github.weijunfu.id.util.NumberUtil;
+import io.github.weijunfu.id.util.StringUtil;
 
 import java.io.IOException;
 
@@ -31,6 +32,12 @@ public class FuAmountDeserializer extends JsonDeserializer<Double> implements Co
       int scale = (precision != null) ? precision : 2;
 
       return Double.valueOf(NumberUtil.format(value, scale));
+    }
+    String val = p.getValueAsString();
+
+    if(StringUtil.isNumeric(val)) { // 支持值为字符串的数字
+      int scale = (precision != null) ? precision : 2;
+      return Double.valueOf(NumberUtil.format(Double.valueOf(val), scale));
     }
     return null;
   }
