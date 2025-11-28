@@ -3,7 +3,11 @@ package io.github.weijunfu;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import io.github.weijunfu.domain.Amount;
 import io.github.weijunfu.domain.Student;
+import io.github.weijunfu.id.amount.FuAmountDeserializer;
+import io.github.weijunfu.id.amount.FuAmountSerializer;
 import io.github.weijunfu.id.util.FuIds;
 import io.github.weijunfu.id.view.IdView;
 import io.github.weijunfu.id.view.IdsView;
@@ -100,6 +104,34 @@ public class AppTest {
 
         IdsView idsView = new IdsView(List.of(1L, 2L, 3L));
         System.out.println(mapper.writeValueAsString(idsView)); // {"ids":["jR","k5","l5"]}
+    }
 
+    @Test
+    @DisplayName("金额")
+    void testAmount() throws JsonProcessingException {
+        Amount amount = new Amount();
+        amount.setAmount1(0.244);
+        amount.setAmount2(0.247);
+
+        amount.setAmount3(0.4844);
+        amount.setAmount4(0.4885);
+
+        JsonMapper mapper = new JsonMapper();
+
+        // 添加此行来查看详细日志
+        mapper.enable(com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT);
+
+        // 注册自定义模块
+        /* SimpleModule module = new SimpleModule();
+        module.addSerializer(Double.class, new FuAmountSerializer());
+        module.addDeserializer(Double.class, new FuAmountDeserializer());
+        mapper.registerModule(module); */
+
+        String json = mapper.writeValueAsString(amount);
+
+        System.out.println(json);
+
+        Amount amount1 = mapper.readValue(json, Amount.class);
+        System.out.println(amount1.toString());
     }
 }

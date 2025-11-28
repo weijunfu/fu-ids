@@ -76,3 +76,21 @@ System.out.println(mapper.writeValueAsString(idView));  // {"id":"jR"}
 IdsView idsView = new IdsView(List.of(1L, 2L, 3L));
 System.out.println(mapper.writeValueAsString(idsView)); // {"ids":["jR","k5","l5"]}
 ```
+
+### 金额
+
+```java
+public class Amount implements Serializable {
+
+  private static final long serialVersionUID = 291217L;
+
+  // 默认保留两位小数
+  @JsonAmount
+  private Double amount1;
+
+  // 保留3位小数
+  @JsonAmount(precision = 3)
+  private Double amount2;
+
+}
+```
