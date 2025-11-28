@@ -5,10 +5,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.github.weijunfu.domain.Student;
 import io.github.weijunfu.id.util.FuIds;
+import io.github.weijunfu.id.view.IdView;
+import io.github.weijunfu.id.view.IdsView;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -85,5 +88,18 @@ public class AppTest {
         Student student1 = mapper.readValue(json, Student.class);
         System.out.println("to student: " + student1);
         assert student1.getId().equals(student1.getId());
+    }
+
+    @Test
+    @DisplayName("id(s) View")
+    void testIdView() throws JsonProcessingException {
+        JsonMapper mapper = new JsonMapper();
+
+        IdView idView = new IdView(1L);
+        System.out.println(mapper.writeValueAsString(idView));  // {"id":"jR"}
+
+        IdsView idsView = new IdsView(List.of(1L, 2L, 3L));
+        System.out.println(mapper.writeValueAsString(idsView)); // {"ids":["jR","k5","l5"]}
+
     }
 }

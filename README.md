@@ -64,3 +64,15 @@ public class SiteProductController {
   }
 }
 ```
+
+### 3. Id View
+
+```java
+JsonMapper mapper = new JsonMapper();
+
+IdView idView = new IdView(1L);
+System.out.println(mapper.writeValueAsString(idView));  // {"id":"jR"}
+
+IdsView idsView = new IdsView(List.of(1L, 2L, 3L));
+System.out.println(mapper.writeValueAsString(idsView)); // {"ids":["jR","k5","l5"]}
+```
