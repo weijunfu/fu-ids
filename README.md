@@ -77,7 +77,7 @@ IdsView idsView = new IdsView(List.of(1L, 2L, 3L));
 System.out.println(mapper.writeValueAsString(idsView)); // {"ids":["jR","k5","l5"]}
 ```
 
-### 金额
+### 4. 金额
 
 ```java
 public class Amount implements Serializable {
@@ -93,4 +93,10 @@ public class Amount implements Serializable {
   private Double amount2;
 
 }
+```
+
+### 5. 雪花算法
+
+```java
+Snowflake snowflake = IdUtil.getSnowflake(1, 5);
 ```

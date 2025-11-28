@@ -9,6 +9,8 @@ import io.github.weijunfu.domain.Student;
 import io.github.weijunfu.id.amount.FuAmountDeserializer;
 import io.github.weijunfu.id.amount.FuAmountSerializer;
 import io.github.weijunfu.id.util.FuIds;
+import io.github.weijunfu.id.util.IdUtil;
+import io.github.weijunfu.id.util.Snowflake;
 import io.github.weijunfu.id.view.IdView;
 import io.github.weijunfu.id.view.IdsView;
 import org.junit.jupiter.api.DisplayName;
@@ -17,6 +19,11 @@ import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Unit test for simple App.
@@ -133,5 +140,46 @@ public class AppTest {
 
         Amount amount1 = mapper.readValue(json, Amount.class);
         System.out.println(amount1.toString());
+    }
+
+    @Test
+    void testSnowflake() {
+        Snowflake snowflake = IdUtil.getSnowflake(1, 5);
+
+        for (int i = 0; i < 100; i++) {
+            System.out.println(snowflake.nextId());
+        }
+    }
+
+    @Test
+    void testSnowflakePool() throws Exception {
+        int threadCount = 50;
+        int totalRequests = 500000; // 共 50 万 ID
+        Snowflake snowflake = new Snowflake(1, 1);
+
+        Set<Long> ids = ConcurrentHashMap.newKeySet();
+        ExecutorService pool = Executors.newFixedThreadPool(threadCount);
+        CountDownLatch latch = new CountDownLatch(threadCount);
+
+        long start = System.currentTimeMillis();
+
+        for (int i = 0; i < threadCount; i++) {
+            pool.submit(() -> {
+                for (int j = 0; j < totalRequests / threadCount; j++) {
+                    long id = snowflake.nextId();
+                    ids.add(id);
+                }
+                latch.countDown();
+            });
+        }
+
+        latch.await();
+        long end = System.currentTimeMillis();
+
+        System.out.println("生成 ID 数量: " + ids.size());
+        System.out.println("耗时(ms): " + (end - start));
+        System.out.println("QPS: " + (ids.size() * 1000L / (end - start)));
+
+        pool.shutdown();
     }
 }
