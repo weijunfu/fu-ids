@@ -5,12 +5,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import io.github.weijunfu.domain.Amount;
+import io.github.weijunfu.domain.Product;
 import io.github.weijunfu.domain.Student;
 import io.github.weijunfu.id.amount.FuAmountDeserializer;
 import io.github.weijunfu.id.amount.FuAmountSerializer;
-import io.github.weijunfu.id.util.FuIds;
-import io.github.weijunfu.id.util.IdUtil;
-import io.github.weijunfu.id.util.Snowflake;
+import io.github.weijunfu.id.util.*;
 import io.github.weijunfu.id.view.IdView;
 import io.github.weijunfu.id.view.IdsView;
 import org.junit.jupiter.api.DisplayName;
@@ -194,5 +193,35 @@ public class AppTest {
         System.out.println("QPS: " + (ids.size() * 1000L / (end - start)));
 
         pool.shutdown();
+    }
+
+    @Test
+    void testProduct() throws JsonProcessingException {
+        Product product = new Product();
+        product.setUnitPrice(1.25);
+        product.setMouldCost(50.25);
+
+        System.out.println(product);
+
+        String json = "{\"unitPrice\":\"1\",\"mouldCost\":\"50.2544\"}";
+
+
+        JsonMapper mapper = new JsonMapper();
+
+        // 添加此行来查看详细日志
+        mapper.enable(com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT);
+        Product product2 = mapper.readValue(json, Product.class);
+        System.out.println(product2);
+    }
+
+    @Test
+    void testNumber() {
+        System.out.println(StringUtil.isNumeric("0.12"));       // true
+        System.out.println(StringUtil.isNumeric("10.12"));      // true
+        System.out.println(StringUtil.isNumeric("-0.12"));      // true
+
+        System.out.println(NumberUtil.format(0.124, 2));
+        System.out.println(NumberUtil.format(0.127, 2));
+        System.out.println(NumberUtil.format(-0.1244, 2));
     }
 }
