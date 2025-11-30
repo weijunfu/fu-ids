@@ -100,3 +100,38 @@ public class Amount implements Serializable {
 ```java
 Snowflake snowflake = IdUtil.getSnowflake(1, 5);
 ```
+
+### MD5
+
+```java
+String input = "Hello, World!";
+System.out.println("原始字符串: " + input);
+System.out.println("MD5 哈希值: " + MD5Util.get(input));
+System.out.println("MD5 哈希值(大写): " + MD5Util.get(input, Boolean.TRUE));
+```
+### 安全
+
+#### AES
+
+```java
+String key = generateKey(AESKeySizeEnum.K_128); // 或 256
+System.out.println("密钥 (Base64): " + key);
+
+String plaintext = "Sensitive data: credit card = 1234-5678-9012-3456";
+System.out.println("明文: " + plaintext);
+
+String encrypted = encrypt(plaintext, key);
+System.out.println("密文 (Base64): " + encrypted);
+
+String decrypted = decrypt(encrypted, key);
+System.out.println("解密后: " + decrypted);
+System.out.println("一致: " + plaintext.equals(decrypted));
+
+// 尝试篡改密文（会抛出异常）
+try {
+  String tampered = encrypted.substring(0, encrypted.length() - 4) + "AAAA";
+  decrypt(tampered, key);
+} catch (Exception e) {
+  System.out.println("✅ 篡改检测成功！解密失败（预期行为）: " + e.getClass().getSimpleName());
+}
+```
