@@ -1,7 +1,4 @@
-package io.github.weijunfu.id.security;
-
-import io.github.weijunfu.id.security.util.HexUtil;
-import io.github.weijunfu.id.util.StringUtil;
+package io.github.weijunfu.id.security.util;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;

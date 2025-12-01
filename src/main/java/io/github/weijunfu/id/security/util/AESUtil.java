@@ -1,4 +1,4 @@
-package io.github.weijunfu.id.security;
+package io.github.weijunfu.id.security.util;
 
 import io.github.weijunfu.id.security.enums.AESKeySizeEnum;
 
