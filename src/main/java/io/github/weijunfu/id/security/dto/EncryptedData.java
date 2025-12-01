@@ -81,7 +81,7 @@ public class EncryptedData {
     System.out.println("v1 加密: " + data1.getCiphertext());
 
     // 2. 轮换到 v2
-    String newKey = AESUtil.generateKey(AESKeySizeEnum.K_256); // 256-bit key
+    String newKey = AESUtil.generateKeyToString(AESKeySizeEnum.K_256); // 256-bit key
     km.rotateKey("v2", newKey);
 
     // 3. 用 v2 加密新数据

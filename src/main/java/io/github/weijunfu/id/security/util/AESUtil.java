@@ -32,14 +32,16 @@ public final class AESUtil {
   /**
    * 生成 AES 密钥（128 或 256 位），返回 Base64 字符串
    */
-  public static String generateKey(AESKeySizeEnum keySize) throws Exception {
+  public static String generateKeyToString(AESKeySizeEnum keySize) throws Exception {
+    return Base64Util.encodeToString(generateKey(keySize).getEncoded());
+  }
+  public static SecretKey generateKey(AESKeySizeEnum keySize) throws Exception {
     if (Objects.isNull(keySize)) {
       throw new IllegalArgumentException("密钥长度必须为 128 或 256");
     }
     KeyGenerator keyGen = KeyGenerator.getInstance(ALGORITHM);
     keyGen.init(keySize.getKeySize(), new SecureRandom());
-    SecretKey secretKey = keyGen.generateKey();
-    return Base64Util.encodeToString(secretKey.getEncoded());
+    return keyGen.generateKey();
   }
 
   /**
@@ -114,7 +116,7 @@ public final class AESUtil {
 
   // ===== 测试示例 =====
   public static void main(String[] args) throws Exception {
-    String key = generateKey(AESKeySizeEnum.K_128); // 或 256
+    String key = generateKeyToString(AESKeySizeEnum.K_128); // 或 256
     System.out.println("密钥 (Base64): " + key);
 
     String plaintext = "Sensitive data: credit card = 1234-5678-9012-3456";
