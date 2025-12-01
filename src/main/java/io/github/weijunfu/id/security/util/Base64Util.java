@@ -29,6 +29,14 @@ public class Base64Util {
     return Base64.getDecoder().decode(bytes);
   }
 
+  public static byte[] decode(String base64Key) {
+    if (!StringUtil.hasText(base64Key)) {
+      throw new IllegalArgumentException("base64Key cannot be null or empty");
+    }
+
+    return Base64.getDecoder().decode(base64Key);
+  }
+
   public static String decodeToString(String base64) {
     if (!StringUtil.hasText(base64)) {
       throw new IllegalArgumentException("base64 cannot be null or empty");

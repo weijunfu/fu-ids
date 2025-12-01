@@ -1,6 +1,7 @@
 package io.github.weijunfu.id.security.util;
 
 import io.github.weijunfu.id.security.enums.AESKeySizeEnum;
+import io.github.weijunfu.id.security.enums.GCMLenEnum;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -18,11 +19,11 @@ import java.util.Objects;
  */
 public final class AESUtil {
 
-  private static final String ALGORITHM = "AES";
-  private static final String TRANSFORMATION = "AES/GCM/NoPadding"; // GCM 不需要填充
+  public static final String ALGORITHM = "AES";
+  public static final String TRANSFORMATION = "AES/GCM/NoPadding"; // GCM 不需要填充
 
-  private static final int GCM_NONCE_LENGTH = 12; // 推荐 96 位 (12 字节)
-  private static final int GCM_TAG_LENGTH = 128;  // 认证标签长度（bit），必须为 128
+  public static final int GCM_NONCE_LENGTH = 12; // 推荐 96 位 (12 字节)
+  public static final int GCM_TAG_LENGTH = 128;  // 认证标签长度（bit），必须为 128
 
   private AESUtil() {
     // 工具类，禁止实例化
@@ -38,7 +39,7 @@ public final class AESUtil {
     KeyGenerator keyGen = KeyGenerator.getInstance(ALGORITHM);
     keyGen.init(keySize.getKeySize(), new SecureRandom());
     SecretKey secretKey = keyGen.generateKey();
-    return Base64.getEncoder().encodeToString(secretKey.getEncoded());
+    return Base64Util.encodeToString(secretKey.getEncoded());
   }
 
   /**
@@ -49,9 +50,17 @@ public final class AESUtil {
    * @return Base64( nonce + ciphertext + authTag )
    */
   public static String encrypt(String plainText, String base64Key) throws Exception {
-    byte[] keyBytes = Base64.getDecoder().decode(base64Key);
+    byte[] keyBytes = Base64Util.decode(base64Key);
     SecretKeySpec keySpec = new SecretKeySpec(keyBytes, ALGORITHM);
+    return encryptToString(keySpec, plainText);
+  }
 
+  public static String encryptToString(SecretKeySpec keySpec, String plainText) throws Exception {
+    byte[] ciphertext = encrypt(keySpec, plainText);
+    return Base64Util.encodeToString(ciphertext);
+  }
+
+  public static byte[] encrypt(SecretKeySpec keySpec, String plainText) throws Exception {
     // 生成随机 nonce（12 字节）
     byte[] nonce = new byte[GCM_NONCE_LENGTH];
     new SecureRandom().nextBytes(nonce);
@@ -67,7 +76,7 @@ public final class AESUtil {
     System.arraycopy(nonce, 0, combined, 0, nonce.length);
     System.arraycopy(ciphertext, 0, combined, nonce.length, ciphertext.length);
 
-    return Base64.getEncoder().encodeToString(combined);
+    return combined;
   }
 
   /**
@@ -77,9 +86,14 @@ public final class AESUtil {
    * @param base64Key       Base64 编码的密钥
    * @return 明文（若认证失败，抛出 AEADBadTagException）
    */
-  public static String decrypt(String base64Encrypted, String base64Key) throws Exception {
-    byte[] combined = Base64.getDecoder().decode(base64Encrypted);
-    byte[] keyBytes = Base64.getDecoder().decode(base64Key);
+  public static String decryptToString(String base64Encrypted, String base64Key) throws Exception {
+    byte[] ciphertext = decrypt(base64Encrypted, base64Key);
+    return new String(ciphertext, StandardCharsets.UTF_8);
+  }
+
+  public static byte[] decrypt(String base64Encrypted, String base64Key) throws Exception {
+    byte[] combined = Base64Util.decode(base64Encrypted);
+    byte[] keyBytes = Base64Util.decode(base64Key);
 
     if (combined.length < GCM_NONCE_LENGTH) {
       throw new IllegalArgumentException("密文太短，无法提取 nonce");
@@ -95,8 +109,7 @@ public final class AESUtil {
     GCMParameterSpec gcmSpec = new GCMParameterSpec(GCM_TAG_LENGTH, nonce);
     cipher.init(Cipher.DECRYPT_MODE, keySpec, gcmSpec);
 
-    byte[] decrypted = cipher.doFinal(ciphertext);
-    return new String(decrypted, StandardCharsets.UTF_8);
+    return cipher.doFinal(ciphertext);
   }
 
   // ===== 测试示例 =====
@@ -110,7 +123,7 @@ public final class AESUtil {
     String encrypted = encrypt(plaintext, key);
     System.out.println("密文 (Base64): " + encrypted);
 
-    String decrypted = decrypt(encrypted, key);
+    String decrypted = decryptToString(encrypted, key);
     System.out.println("解密后: " + decrypted);
     System.out.println("一致: " + plaintext.equals(decrypted));
 

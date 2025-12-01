@@ -38,8 +38,8 @@ public final class RSAUtil {
     keyGen.initialize(keySize, new SecureRandom());
     KeyPair keyPair = keyGen.generateKeyPair();
 
-    String publicKey = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
-    String privateKey = Base64.getEncoder().encodeToString(keyPair.getPrivate().getEncoded());
+    String publicKey = Base64Util.encodeToString(keyPair.getPublic().getEncoded());
+    String privateKey = Base64Util.encodeToString(keyPair.getPrivate().getEncoded());
 
     return new String[]{publicKey, privateKey};
   }
@@ -48,7 +48,7 @@ public final class RSAUtil {
    * 公钥加密（适合加密小数据，如 AES 密钥）
    */
   public static String encryptByPublicKey(String data, String base64PublicKey) throws Exception {
-    byte[] keyBytes = Base64.getDecoder().decode(base64PublicKey);
+    byte[] keyBytes = Base64Util.decode(base64PublicKey);
     X509EncodedKeySpec keySpec = new X509EncodedKeySpec(keyBytes);
     PublicKey publicKey = KeyFactory.getInstance(KEY_ALGORITHM).generatePublic(keySpec);
 
@@ -56,15 +56,15 @@ public final class RSAUtil {
     cipher.init(Cipher.ENCRYPT_MODE, publicKey);
     byte[] encrypted = cipher.doFinal(data.getBytes(StandardCharsets.UTF_8));
 
-    return Base64.getEncoder().encodeToString(encrypted);
+    return Base64Util.encodeToString(encrypted);
   }
 
   /**
    * 私钥解密
    */
   public static String decryptByPrivateKey(String base64EncryptedData, String base64PrivateKey) throws Exception {
-    byte[] encryptedData = Base64.getDecoder().decode(base64EncryptedData);
-    byte[] keyBytes = Base64.getDecoder().decode(base64PrivateKey);
+    byte[] encryptedData = Base64Util.decode(base64EncryptedData);
+    byte[] keyBytes = Base64Util.decode(base64PrivateKey);
     PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyBytes);
     PrivateKey privateKey = KeyFactory.getInstance(KEY_ALGORITHM).generatePrivate(keySpec);
 
@@ -79,7 +79,7 @@ public final class RSAUtil {
    * 私钥签名（对数据摘要进行签名）
    */
   public static String sign(String data, String base64PrivateKey) throws Exception {
-    byte[] keyBytes = Base64.getDecoder().decode(base64PrivateKey);
+    byte[] keyBytes = Base64Util.decode(base64PrivateKey);
     PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyBytes);
     PrivateKey privateKey = KeyFactory.getInstance(KEY_ALGORITHM).generatePrivate(keySpec);
 
@@ -88,15 +88,15 @@ public final class RSAUtil {
     signature.update(data.getBytes(StandardCharsets.UTF_8));
     byte[] signed = signature.sign();
 
-    return Base64.getEncoder().encodeToString(signed);
+    return Base64Util.encodeToString(signed);
   }
 
   /**
    * 公钥验签
    */
   public static boolean verify(String data, String base64Signature, String base64PublicKey) throws Exception {
-    byte[] sigBytes = Base64.getDecoder().decode(base64Signature);
-    byte[] keyBytes = Base64.getDecoder().decode(base64PublicKey);
+    byte[] sigBytes = Base64Util.decode(base64Signature);
+    byte[] keyBytes = Base64Util.decode(base64PublicKey);
     X509EncodedKeySpec keySpec = new X509EncodedKeySpec(keyBytes);
     PublicKey publicKey = KeyFactory.getInstance(KEY_ALGORITHM).generatePublic(keySpec);
 
