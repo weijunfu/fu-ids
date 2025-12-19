@@ -98,7 +98,21 @@ public class Amount implements Serializable {
 ### 5. 雪花算法
 
 ```java
+// 从配置中读取值，否则使用默认值
+Snowflake snowflake = IdUtil.getSnowflake();
+
+// 自定义机器码、数据中心码，从配置中读取起始时间戳
 Snowflake snowflake = IdUtil.getSnowflake(1, 5);
+
+// 自定义机器码、数据中心码、起始时间戳
+Snowflake snowflake = IdUtil.getSnowflake(1, 5, 1609459200000L);
+```
+
+文件配置
+```properties
+fu-ids.snowflake.epoch=1609459200000L   # 起始时间戳（2021-01-01 00:00:00 UTC）
+fu-ids.snowflake.workerId=1             #工作节点ID
+fu-ids.snowflake.datacenterId=1         # 数据中心ID
 ```
 
 ### MD5

@@ -51,21 +51,14 @@ public class IdUtil {
    * 使用默认workerId 和 datacenterId 创建 Snowflake
    */
   public static Snowflake getSnowflake() {
-    return new Snowflake();
+    return new Snowflake(1, 1);
   }
 
   /**
    * 快捷生成 Snowflake ID
    */
   public static long getSnowflakeNextId() {
-    return new Snowflake().nextId();
-  }
-
-  /**
-   * 快捷生成 Snowflake 字符串 ID
-   */
-  public static String getSnowflakeNextIdStr() {
-    return new Snowflake().nextIdStr();
+    return getSnowflake().nextId();
   }
 
 }

@@ -1,103 +1,127 @@
 package io.github.weijunfu.id.util;
 
-import io.github.weijunfu.id.time.SystemClock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 public class Snowflake {
 
-  /** 默认开始时间截 (2020-01-01) */
-  private final long epoch = 1577836800000L;
+  private final static Logger log = LoggerFactory.getLogger(Snowflake.class);
 
-  /** 机器ID所占位数 */
-  private final long workerIdBits = 5L;
+  // =================== 基础配置常量 ===================
+  private static final String APPLICATION_PROPERTIES = "application.properties";
+  private static final String FU_IDS_EPOCH = "fu-ids.snowflake.epoch";
+  private static final String FU_IDS_WORKER_ID = "fu-ids.snowflake.workerId";
+  private static final String FU_IDS_DATACENTER_ID = "fu-ids.snowflake.datacenterId";
 
-  /** 数据中心ID所占位数 */
-  private final long datacenterIdBits = 5L;
+  // =================== 基础常量 ===================
+  private static final long DEFAULT_EPOCH = 1609459200000L; // 起始时间戳（2021-01-01 00:00:00 UTC），可自定义
+  private static final long WORKER_ID_BITS = 5L;
+  private static final long DATACENTER_ID_BITS = 5L;
+  private static final long MAX_WORKER_ID = ~(-1L << WORKER_ID_BITS); // 31
+  private static final long MAX_DATACENTER_ID = ~(-1L << DATACENTER_ID_BITS); // 31
+  private static final long SEQUENCE_BITS = 12L;
 
-  /** 最大机器ID */
-  private final long maxWorkerId = -1L ^ (-1L << workerIdBits);
+  private static final long WORKER_ID_SHIFT = SEQUENCE_BITS;
+  private static final long DATACENTER_ID_SHIFT = SEQUENCE_BITS + WORKER_ID_BITS;
+  private static final long TIMESTAMP_LEFT_SHIFT = SEQUENCE_BITS + WORKER_ID_BITS + DATACENTER_ID_BITS;
+  private static final long SEQUENCE_MASK = ~(-1L << SEQUENCE_BITS); // 4095
 
-  /** 最大数据中心ID */
-  private final long maxDatacenterId = -1L ^ (-1L << datacenterIdBits);
-
-  /** 序列在ID中占的位数 */
-  private final long sequenceBits = 12L;
-
-  /** 机器ID向左移12位 */
-  private final long workerIdShift = sequenceBits;
-
-  /** 数据中心ID向左移17位 */
-  private final long datacenterIdShift = sequenceBits + workerIdBits;
-
-  /** 时间戳向左移22位 */
-  private final long timestampLeftShift = sequenceBits + workerIdBits + datacenterIdBits;
-
-  /** 4095 - 序列掩码 */
-  private final long sequenceMask = -1L ^ (-1L << sequenceBits);
-
-  /** 工作机器ID */
-  private long workerId;
-
-  /** 数据中心ID */
-  private long datacenterId;
-
-  /** 每毫秒自增序列 */
+  // =================== 实例变量 ===================
+  private final long workerId;
+  private final long datacenterId;
+  private final long epoch;
   private long sequence = 0L;
-
-  /** 上次生成ID的时间 */
   private long lastTimestamp = -1L;
 
+  /**
+   * 构造函数
+   * 从配置文件中加载 epoch、workerId、datacenterId
+   */
   public Snowflake() {
-    this(0, 0);
+    this(loadWorkerIdFromConfig(), loadDatacenterIdFromConfig(), loadEpochFromConfig());
   }
 
+  /**
+   * 构造函数
+   *
+   * @param workerId     工作机器ID (0~31)
+   * @param datacenterId 数据中心ID (0~31)
+   */
   public Snowflake(long workerId, long datacenterId) {
-    if (workerId > maxWorkerId || workerId < 0) {
-      throw new IllegalArgumentException(
-          String.format("Worker Id can't be greater than %d or less than 0", maxWorkerId));
+    this(workerId, datacenterId, loadEpochFromConfig());
+  }
+
+  /**
+   * 构造函数
+   *
+   * @param workerId     工作机器ID (0~31)
+   * @param datacenterId 数据中心ID (0~31)
+   * @param epoch        起始时间戳（13位毫秒数）
+   */
+  public Snowflake(long workerId, long datacenterId, long epoch) {
+    if (workerId > MAX_WORKER_ID || workerId < 0) {
+      throw new IllegalArgumentException("workerId 不能大于 " + MAX_WORKER_ID + " 或小于 0");
     }
-    if (datacenterId > maxDatacenterId || datacenterId < 0) {
-      throw new IllegalArgumentException(
-          String.format("Datacenter Id can't be greater than %d or less than 0", maxDatacenterId));
+    if (datacenterId > MAX_DATACENTER_ID || datacenterId < 0) {
+      throw new IllegalArgumentException("datacenterId 不能大于 " + MAX_DATACENTER_ID + " 或小于 0");
     }
     this.workerId = workerId;
     this.datacenterId = datacenterId;
+    this.epoch = epoch;
   }
 
-  /** 主方法：生成下一个 ID */
+  /**
+   * 生成下一个ID（线程安全）
+   */
   public synchronized long nextId() {
     long timestamp = timeGen();
 
-    // 时钟回拨
+    // 时钟回拨处理
     if (timestamp < lastTimestamp) {
-      throw new IllegalStateException(
-          String.format("Clock moved backwards. Refusing for %d milliseconds",
-              lastTimestamp - timestamp));
+      long offset = lastTimestamp - timestamp;
+      if (offset <= 5) {
+        try {
+          // 等待时间追上（最多等待5ms）
+          TimeUnit.MILLISECONDS.sleep(offset);
+          timestamp = timeGen();
+          if (timestamp < lastTimestamp) {
+            throw new RuntimeException("时钟回拨，拒绝生成ID：" + timestamp);
+          }
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          throw new RuntimeException("等待时钟恢复被中断", e);
+        }
+      } else {
+        throw new RuntimeException("时钟回拨过大，拒绝生成ID：" + timestamp);
+      }
     }
 
-    if (timestamp == lastTimestamp) {
-      // 同一毫秒内自增
-      sequence = (sequence + 1) & sequenceMask;
+    if (lastTimestamp == timestamp) {
+      // 同一毫秒内，序列号自增
+      sequence = (sequence + 1) & SEQUENCE_MASK;
       if (sequence == 0) {
-        // 序列溢出，等待下一毫秒
+        // 序列号溢出，等待下一毫秒
         timestamp = tilNextMillis(lastTimestamp);
       }
     } else {
-      // 新毫秒重置序列
+      // 新的一毫秒，重置序列号
       sequence = 0L;
     }
 
     lastTimestamp = timestamp;
 
-    return ((timestamp - epoch) << timestampLeftShift)
-        | (datacenterId << datacenterIdShift)
-        | (workerId << workerIdShift)
+    return ((timestamp - this.epoch) << TIMESTAMP_LEFT_SHIFT)
+        | (datacenterId << DATACENTER_ID_SHIFT)
+        | (workerId << WORKER_ID_SHIFT)
         | sequence;
   }
 
-  public String nextIdStr() {
-    return Long.toString(nextId());
-  }
-
+  /**
+   * 阻塞到下一个毫秒，直到获得新的时间戳
+   */
   private long tilNextMillis(long lastTimestamp) {
     long timestamp = timeGen();
     while (timestamp <= lastTimestamp) {
@@ -106,9 +130,59 @@ public class Snowflake {
     return timestamp;
   }
 
-  /** 使用 SystemClock — 性能更好 */
-  private long timeGen() {
-    return SystemClock.now();
+  /**
+   * 返回当前时间戳（毫秒）
+   */
+  protected long timeGen() {
+    return System.currentTimeMillis();
   }
 
+  /**
+   * 加载配置文件中的 epoch
+   * @return
+   */
+  private static Long loadEpochFromConfig() {
+    return loadFromConfig(FU_IDS_EPOCH, DEFAULT_EPOCH);
+  }
+
+  /**
+   * 加载配置文件中的 workerId
+   * @return
+   */
+  private static Long loadWorkerIdFromConfig() {
+    return loadFromConfig(FU_IDS_WORKER_ID, 1L);
+  }
+
+  /**
+   * 加载配置文件中的 datacenterId
+   * @return
+   */
+  private static Long loadDatacenterIdFromConfig() {
+    return loadFromConfig(FU_IDS_DATACENTER_ID, 1L);
+  }
+
+  private static Long loadFromConfig(String key, Long defaultValue) {
+    try {
+      Properties props = new Properties();
+      props.load(Snowflake.class.getClassLoader().getResourceAsStream(APPLICATION_PROPERTIES));
+      return Long.parseLong(props.getProperty(key, String.valueOf(defaultValue)));
+    } catch (Exception e) {
+      log.warn("fu-ids加载配置文件[{}]失败，[{}]使用默认值: {}", APPLICATION_PROPERTIES, key, defaultValue);
+      return defaultValue;
+    }
+  }
+
+  // =================== 测试用例 ===================
+  public static void main(String[] args) {
+    Snowflake idGen = new Snowflake(1, 1);
+
+    // 多线程测试
+    for (int i = 0; i < 10; i++) {
+      new Thread(() -> {
+        for (int j = 0; j < 1000; j++) {
+          System.out.println(idGen.nextId());
+        }
+      }).start();
+    }
+  }
 }
