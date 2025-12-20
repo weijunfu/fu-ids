@@ -6,12 +6,22 @@ import java.security.*;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
+import java.util.Map;
 
 /**
  * RSA 工具类：支持加解密、签名验签
  * 默认使用 SHA256withRSA 签名算法，RSA/ECB/PKCS1Padding 加密填充
  */
 public final class RSAUtil {
+
+  /**
+   *  密钥类型：公钥 - 键值
+   */
+  public static final String PUBLIC_KEY = "PUBLIC";
+  /**
+   *  密钥类型：私钥 - 键值
+   */
+  public static final String PRIVATE_KEY = "PRIVATE";
 
   private static final String KEY_ALGORITHM = "RSA";
   private static final String SIGNATURE_ALGORITHM = "SHA256withRSA";
@@ -25,7 +35,22 @@ public final class RSAUtil {
   }
 
   /**
-   * 生成 RSA 密钥对（公钥 + 私钥），返回 Base64 字符串
+   * 获取公钥和私钥
+   *
+   * @return {PUBLIC_KEY}: 公钥 Base64, [PRIVATE_KEY]: 私钥 Base64
+   */
+  public static Map<String, String> generateMapKeyPair(int keySize) {
+      try {
+        String[] keyPair = generateKeyPair(keySize);
+
+        return Map.of(PUBLIC_KEY, keyPair[0], PRIVATE_KEY, keyPair[1]);
+      } catch (Exception e) {
+          throw new RuntimeException(e);
+      }
+  }
+
+  /**
+   * 生成 RSA(2048)密钥对（公钥 + 私钥），返回 Base64 字符串
    *
    * @return [0] 公钥 (Base64), [1] 私钥 (Base64)
    */
@@ -60,6 +85,24 @@ public final class RSAUtil {
   }
 
   /**
+   * 私钥加密
+   * @param data
+   * @param base64PrivateKey
+   * @return
+   * @throws Exception
+   */
+  public static String encryptByPrivate(String data, String base64PrivateKey) throws Exception {
+    byte[] keyBytes = Base64Util.decode(base64PrivateKey);
+    PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyBytes);
+    PrivateKey privateKey = KeyFactory.getInstance(KEY_ALGORITHM).generatePrivate(keySpec);
+
+    Cipher cipher = Cipher.getInstance(CIPHER_TRANSFORMATION);
+    cipher.init(Cipher.ENCRYPT_MODE, privateKey);
+    byte[] encrypted = cipher.doFinal(data.getBytes(StandardCharsets.UTF_8));
+    return Base64Util.encodeToString(encrypted);
+  }
+
+  /**
    * 私钥解密
    */
   public static String decryptByPrivateKey(String base64EncryptedData, String base64PrivateKey) throws Exception {
@@ -72,6 +115,26 @@ public final class RSAUtil {
     cipher.init(Cipher.DECRYPT_MODE, privateKey);
     byte[] decrypted = cipher.doFinal(encryptedData);
 
+    return new String(decrypted, StandardCharsets.UTF_8);
+  }
+
+  /**
+   * 公钥解密
+   * @param data
+   * @param base64PublicKey
+   * @return
+   * @throws Exception
+   */
+  public static String decryptByPublicKey(String data, String base64PublicKey) throws Exception {
+    byte[] encryptedData = Base64Util.decode(data);
+    byte[] keyBytes = Base64Util.decode(base64PublicKey);
+    PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyBytes);
+
+    PublicKey publicKey = KeyFactory.getInstance(KEY_ALGORITHM).generatePublic(keySpec);
+
+    Cipher cipher = Cipher.getInstance(CIPHER_TRANSFORMATION);
+    cipher.init(Cipher.DECRYPT_MODE, publicKey);
+    byte[] decrypted = cipher.doFinal(encryptedData);
     return new String(decrypted, StandardCharsets.UTF_8);
   }
 
