@@ -149,3 +149,22 @@ try {
   System.out.println("✅ 篡改检测成功！解密失败（预期行为）: " + e.getClass().getSimpleName());
 }
 ```
+
+### Tree
+> 构建树形结构
+```java
+FuTree.buildTree(
+        menuList,
+        "0",
+        Menu::getId,
+        Menu::getParentId,
+        Menu::getSortOrder,
+        Menu::getName,
+        menu -> {
+            Map<String, Object> extensions = new HashMap<>();
+            extensions.put("icon", menu.getIcon());
+            extensions.put("visible", menu.getVisible());
+            return extensions;
+        }
+);
+```
