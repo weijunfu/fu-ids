@@ -1,13 +1,13 @@
 package io.github.weijunfu.id.url;
 
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 public class FuURL {
 
-    private static final Pattern SPACE = Pattern.compile("\\s+");
-    private static final Pattern INVALID = Pattern.compile("[^\\p{IsHan}a-z0-9\\-]");
-    private static final Pattern MULTI_DASH = Pattern.compile("-{2,}");
-    private static final Pattern EDGE_DASH = Pattern.compile("^-|-$");
+    private static final Pattern NORMALIZE = Pattern.compile(
+            "[\\s]+|[^\\p{Alnum}a-z0-9\\-]+|-{2,}|^-|-$"
+    );
 
     /**
      * 将标题字符串转换为URL友好的slug格式
@@ -19,17 +19,16 @@ public class FuURL {
      *
      */
     public static String toSlug(String title) {
-        if (title == null) {
-            throw new IllegalArgumentException("Title cannot be null");
+        if (title == null || title.isBlank()) {
+            return "";
         }
 
-        String s = title.toLowerCase();
-        s = SPACE.matcher(s).replaceAll("-");
-        s = INVALID.matcher(s).replaceAll("");
-        s = MULTI_DASH.matcher(s).replaceAll("-");
-        s = EDGE_DASH.matcher(s).replaceAll("");
-        return s;
+        return NORMALIZE.matcher(title.toLowerCase(Locale.ROOT))
+                .replaceAll(match -> {
+                    String m = match.group();
+                    return m.startsWith("-") ? "" : "-";
+                })
+                .replaceAll("-{2,}", "-")
+                .replaceAll("^-|-$", "");
     }
-
-    private FuURL() {}
 }

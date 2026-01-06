@@ -23,7 +23,7 @@ class SlugTest {
 
         Arrays.stream(testCases).forEach(e -> {
             String slug = FuURL.toSlug(e);
-            System.out.println(slug);
+            System.out.println(String.format("%s: %d - %d", slug, slug.length(), slug.toCharArray().length));
         });
     }
 
