@@ -8,6 +8,13 @@ import java.util.Objects;
 /**
  * MD5 工具类（仅供兼容性用途，请勿用于安全性相关场景）
  */
+/*
+ * Deprecated: MD5 is retained only for legacy, non-security checksums. Do not use it for passwords,
+ * signatures, tamper detection, tokens, or security-sensitive integrity checks. Use
+ * HmacSHA256Util for keyed message authentication. Use BCrypt, Argon2, or PBKDF2 for password
+ * storage.
+ */
+@Deprecated(forRemoval = false)
 public class MD5Util {
 
   // 缓存 MD5 实例提高性能

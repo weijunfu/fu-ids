@@ -5,93 +5,168 @@ import io.github.weijunfu.id.security.enums.AESKeySizeEnum;
 import io.github.weijunfu.id.security.util.AESUtil;
 import io.github.weijunfu.id.security.util.Base64Util;
 
-import javax.crypto.Cipher;
-import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.security.SecureRandom;
+import java.util.Map;
 
 /**
- * 表示一条加密数据，包含 keyId、IV、密文
+ * Encrypted AES-GCM payload with authenticated metadata.
  */
 public class EncryptedData {
+  public static final String CURRENT_VERSION = "v1";
+
+  private String version;
   private String keyId;
-  private String iv;          // Base64
-  private String ciphertext;  // Base64
+  private String aadContext;
+  private String iv;
+  private String ciphertext;
+
+  public static EncryptedData encrypt(String plaintext, KeyManager keyManager) throws Exception {
+    return encrypt(plaintext, keyManager, null);
+  }
+
+  public static EncryptedData encrypt(String plaintext, KeyManager keyManager, String aadContext) throws Exception {
+    String keyId = keyManager.getActiveKeyId();
+    SecretKeySpec key = keyManager.getKey(keyId);
+    byte[] aad = buildAad(CURRENT_VERSION, keyId, aadContext);
+    byte[] encrypted = AESUtil.encrypt(key, plaintext, aad);
+
+    byte[] iv = new byte[AESUtil.GCM_NONCE_LENGTH];
+    byte[] ciphertext = new byte[encrypted.length - AESUtil.GCM_NONCE_LENGTH];
+    System.arraycopy(encrypted, 0, iv, 0, iv.length);
+    System.arraycopy(encrypted, iv.length, ciphertext, 0, ciphertext.length);
+
+    return new EncryptedData(
+        CURRENT_VERSION,
+        keyId,
+        aadContext,
+        Base64Util.encodeToString(iv),
+        Base64Util.encodeToString(ciphertext)
+    );
+  }
+
+  public String decrypt(KeyManager keyManager) throws Exception {
+    return decrypt(keyManager, this.aadContext);
+  }
+
+  public String decrypt(KeyManager keyManager, String aadContext) throws Exception {
+    SecretKeySpec key = keyManager.getKey(this.keyId);
+    byte[] aad = buildAad(this.version, this.keyId, aadContext);
+    return AESUtil.decryptToString(key, toCombinedEncrypted(), aad);
+  }
+
+  public EncryptedData(String keyId, String iv, String ciphertext) {
+    this(CURRENT_VERSION, keyId, null, iv, ciphertext);
+  }
+
+  public EncryptedData(String version, String keyId, String aadContext, String iv, String ciphertext) {
+    this.version = version;
+    this.keyId = keyId;
+    this.aadContext = aadContext;
+    this.iv = iv;
+    this.ciphertext = ciphertext;
+  }
+
+  public String getVersion() {
+    return version;
+  }
+
+  public void setVersion(String version) {
+    this.version = version;
+  }
+
+  public String getKeyId() {
+    return keyId;
+  }
 
   public void setKeyId(String keyId) {
     this.keyId = keyId;
+  }
+
+  public String getAadContext() {
+    return aadContext;
+  }
+
+  public void setAadContext(String aadContext) {
+    this.aadContext = aadContext;
+  }
+
+  public String getIv() {
+    return iv;
   }
 
   public void setIv(String iv) {
     this.iv = iv;
   }
 
+  public String getCiphertext() {
+    return ciphertext;
+  }
+
   public void setCiphertext(String ciphertext) {
     this.ciphertext = ciphertext;
   }
 
-  public static EncryptedData encrypt(String plaintext, KeyManager keyManager) throws Exception {
-    String keyId = keyManager.getActiveKeyId();
-    SecretKeySpec key = keyManager.getKey(keyId);
+  private byte[] toCombinedEncrypted() {
+    byte[] ivBytes = Base64Util.decode(this.iv);
+    if (ivBytes.length != AESUtil.GCM_NONCE_LENGTH) {
+      throw new IllegalArgumentException("GCM IV must be 12 bytes");
+    }
 
-    byte[] iv = new byte[AESUtil.GCM_NONCE_LENGTH]; // GCM 推荐 12 字节 nonce
-    new SecureRandom().nextBytes(iv);
-
-    Cipher cipher = Cipher.getInstance(AESUtil.TRANSFORMATION);
-    GCMParameterSpec spec = new GCMParameterSpec(AESUtil.GCM_TAG_LENGTH, iv);
-    cipher.init(Cipher.ENCRYPT_MODE, key, spec);
-    byte[] ciphertext = cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8));
-
-    return new EncryptedData(keyId,
-        Base64Util.encodeToString(iv),
-        Base64Util.encodeToString(ciphertext));
+    byte[] ciphertextBytes = Base64Util.decode(this.ciphertext);
+    byte[] encrypted = new byte[ivBytes.length + ciphertextBytes.length];
+    System.arraycopy(ivBytes, 0, encrypted, 0, ivBytes.length);
+    System.arraycopy(ciphertextBytes, 0, encrypted, ivBytes.length, ciphertextBytes.length);
+    AESUtil.validateEncrypted(encrypted);
+    return encrypted;
   }
 
-  public String decrypt(KeyManager keyManager) throws Exception {
-    SecretKeySpec key = keyManager.getKey(this.keyId);
-    byte[] iv = Base64Util.decode(this.iv);
-    byte[] ciphertext = Base64Util.decode(this.ciphertext);
+  private static byte[] buildAad(String version, String keyId, String aadContext) {
+    byte[] versionBytes = toRequiredUtf8Bytes(version, "version");
+    byte[] keyIdBytes = toRequiredUtf8Bytes(keyId, "keyId");
+    byte[] contextBytes = normalizeContext(aadContext).getBytes(StandardCharsets.UTF_8);
 
-    Cipher cipher = Cipher.getInstance(AESUtil.TRANSFORMATION);
-    GCMParameterSpec spec = new GCMParameterSpec(AESUtil.GCM_TAG_LENGTH, iv);
-    cipher.init(Cipher.DECRYPT_MODE, key, spec);
-    byte[] plaintext = cipher.doFinal(ciphertext);
-
-    return new String(plaintext, StandardCharsets.UTF_8);
+    ByteBuffer buffer = ByteBuffer.allocate(
+        Integer.BYTES * 3 + versionBytes.length + keyIdBytes.length + contextBytes.length
+    );
+    putField(buffer, versionBytes);
+    putField(buffer, keyIdBytes);
+    putField(buffer, contextBytes);
+    return buffer.array();
   }
 
-  // 构造函数
-  public EncryptedData(String keyId, String iv, String ciphertext) {
-    this.keyId = keyId;
-    this.iv = iv;
-    this.ciphertext = ciphertext;
+  private static void putField(ByteBuffer buffer, byte[] value) {
+    buffer.putInt(value.length);
+    buffer.put(value);
   }
 
-  // Getters
-  public String getKeyId() { return keyId; }
-  public String getIv() { return iv; }
-  public String getCiphertext() { return ciphertext; }
+  private static byte[] toRequiredUtf8Bytes(String value, String fieldName) {
+    if (value == null || value.trim().isEmpty()) {
+      throw new IllegalArgumentException(fieldName + " cannot be null or empty");
+    }
+    return value.getBytes(StandardCharsets.UTF_8);
+  }
+
+  private static String normalizeContext(String aadContext) {
+    return aadContext == null ? "" : aadContext;
+  }
 
   public static void main(String[] args) throws Exception {
-    KeyManager km = new KeyManager();
+    String initialKey = AESUtil.generateKeyToString(AESKeySizeEnum.K_256);
+    KeyManager km = KeyManager.fromBase64Keys("v1", Map.of("v1", initialKey));
+    String context = "table=message;id=1";
 
-    // 1. 用 v1 加密数据
-    EncryptedData data1 = encrypt("Secret message v1", km);
-    System.out.println("v1 加密: " + data1.getCiphertext());
+    EncryptedData data1 = encrypt("Secret message v1", km, context);
+    System.out.println("v1 encrypted: " + data1.getCiphertext());
 
-    // 2. 轮换到 v2
-    String newKey = AESUtil.generateKeyToString(AESKeySizeEnum.K_256); // 256-bit key
+    String newKey = AESUtil.generateKeyToString(AESKeySizeEnum.K_256);
     km.rotateKey("v2", newKey);
 
-    // 3. 用 v2 加密新数据
-    EncryptedData data2 = EncryptedData.encrypt("Secret message v2", km);
-    System.out.println("v2 加密: " + data2.getCiphertext());
+    EncryptedData data2 = EncryptedData.encrypt("Secret message v2", km, context);
+    System.out.println("v2 encrypted: " + data2.getCiphertext());
 
-    // 4. 解密旧数据（自动用 v1）
-    String plain1 = data1.decrypt(km);
-    String plain2 = data2.decrypt(km);
-    System.out.println("解密 v1: " + plain1);
-    System.out.println("解密 v2: " + plain2);
+    System.out.println("decrypted v1: " + data1.decrypt(km, context));
+    System.out.println("decrypted v2: " + data2.decrypt(km, context));
   }
 }

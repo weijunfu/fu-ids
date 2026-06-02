@@ -1,5 +1,4 @@
 package io.github.weijunfu.id.security.util;
-import java.nio.charset.StandardCharsets;
 
 /**
  * 十六进制（Hex）编码/解码工具类
@@ -73,12 +72,9 @@ public final class HexUtil {
     return bytes;
   }
 
-  // 可选：提供字符串直接转 MD5 并用此工具输出（结合 MessageDigest）
   public static void main(String[] args) throws Exception {
-    String input = "Hello, World!";
-    byte[] md5Bytes = java.security.MessageDigest.getInstance("MD5")
-        .digest(input.getBytes(StandardCharsets.UTF_8));
-    System.out.println("MD5 (lower): " + encodeHexString(md5Bytes));
-    System.out.println("MD5 (upper): " + encodeHexString(md5Bytes, true));
+    byte[] bytes = new byte[]{0x01, 0x2A, (byte) 0xFF};
+    System.out.println("Hex (lower): " + encodeHexString(bytes));
+    System.out.println("Hex (upper): " + encodeHexString(bytes, true));
   }
 }

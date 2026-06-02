@@ -115,7 +115,11 @@ fu-ids.snowflake.workerId=1             #工作节点ID
 fu-ids.snowflake.datacenterId=1         # 数据中心ID
 ```
 
-### MD5
+### 兼容性哈希（非安全）
+
+#### MD5（Deprecated）
+
+> `MD5Util` 仅保留给历史兼容、非安全校验用途。不要用于密码、签名、防篡改、Token 或任何安全完整性校验。
 
 ```java
 String input = "Hello, World!";
@@ -124,6 +128,24 @@ System.out.println("MD5 哈希值: " + MD5Util.get(input));
 System.out.println("MD5 哈希值(大写): " + MD5Util.get(input, Boolean.TRUE));
 ```
 ### 安全
+
+#### 密码存储
+
+不要使用 `MD5Util`、`SHA256Util` 或 `HmacSHA256Util` 直接处理密码。
+
+密码存储应使用 BCrypt、Argon2 或 PBKDF2，并为每个密码使用独立随机 salt 和合理成本参数。
+
+#### SHA-256 / HMAC-SHA256
+
+`SHA256Util` 适合非密码摘要；`HmacSHA256Util` 适合带密钥的消息认证。
+
+```java
+String digest = SHA256Util.digestToHex("Hello, World!");
+
+String hmacKey = HmacSHA256Util.generateKeyToString();
+String signature = HmacSHA256Util.signToBase64("message", hmacKey);
+boolean valid = HmacSHA256Util.verifyBase64("message", signature, hmacKey);
+```
 
 #### AES
 

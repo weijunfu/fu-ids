@@ -1,7 +1,6 @@
 package io.github.weijunfu.id.security.util;
 
 import io.github.weijunfu.id.security.enums.AESKeySizeEnum;
-import io.github.weijunfu.id.security.enums.GCMLenEnum;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -10,131 +9,197 @@ import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
-import java.util.Base64;
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
- * AES-GCM 加解密工具类（带认证加密）
- * 支持 128/256 位密钥，使用 12 字节 nonce（推荐）和 16 字节认证标签（128 位）
+ * AES-GCM authenticated encryption utility.
  */
 public final class AESUtil {
 
   public static final String ALGORITHM = "AES";
-  public static final String TRANSFORMATION = "AES/GCM/NoPadding"; // GCM 不需要填充
+  public static final String TRANSFORMATION = "AES/GCM/NoPadding";
 
-  public static final int GCM_NONCE_LENGTH = 12; // 推荐 96 位 (12 字节)
-  public static final int GCM_TAG_LENGTH = 128;  // 认证标签长度（bit），必须为 128
+  public static final int GCM_NONCE_LENGTH = 12;
+  public static final int GCM_TAG_LENGTH = 128;
+  public static final int GCM_TAG_LENGTH_BYTES = GCM_TAG_LENGTH / Byte.SIZE;
+  public static final int MIN_ENCRYPTED_LENGTH = GCM_NONCE_LENGTH + GCM_TAG_LENGTH_BYTES;
+
+  private static final int AES_128_KEY_BYTES = 16;
+  private static final int AES_256_KEY_BYTES = 32;
+  private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
   private AESUtil() {
-    // 工具类，禁止实例化
   }
 
-  /**
-   * 生成 AES 密钥（128 或 256 位），返回 Base64 字符串
-   */
   public static String generateKeyToString(AESKeySizeEnum keySize) throws Exception {
     return Base64Util.encodeToString(generateKey(keySize).getEncoded());
   }
+
   public static SecretKey generateKey(AESKeySizeEnum keySize) throws Exception {
     if (Objects.isNull(keySize)) {
-      throw new IllegalArgumentException("密钥长度必须为 128 或 256");
+      throw new IllegalArgumentException("AES key size must be 128 or 256 bits");
     }
     KeyGenerator keyGen = KeyGenerator.getInstance(ALGORITHM);
-    keyGen.init(keySize.getKeySize(), new SecureRandom());
+    keyGen.init(keySize.getKeySize(), SECURE_RANDOM);
     return keyGen.generateKey();
   }
 
-  /**
-   * AES-GCM 加密（自动随机生成 nonce）
-   *
-   * @param plainText 明文
-   * @param base64Key Base64 编码的密钥
-   * @return Base64( nonce + ciphertext + authTag )
-   */
   public static String encrypt(String plainText, String base64Key) throws Exception {
-    byte[] keyBytes = Base64Util.decode(base64Key);
-    SecretKeySpec keySpec = new SecretKeySpec(keyBytes, ALGORITHM);
-    return encryptToString(keySpec, plainText);
+    return encrypt(plainText, base64Key, (byte[]) null);
+  }
+
+  public static String encrypt(String plainText, String base64Key, String aad) throws Exception {
+    return encrypt(plainText, base64Key, toUtf8Bytes(aad));
+  }
+
+  public static String encrypt(String plainText, String base64Key, byte[] aad) throws Exception {
+    return encryptToString(toAesKey(base64Key), plainText, aad);
   }
 
   public static String encryptToString(SecretKeySpec keySpec, String plainText) throws Exception {
-    byte[] ciphertext = encrypt(keySpec, plainText);
+    return encryptToString(keySpec, plainText, (byte[]) null);
+  }
+
+  public static String encryptToString(SecretKeySpec keySpec, String plainText, String aad) throws Exception {
+    return encryptToString(keySpec, plainText, toUtf8Bytes(aad));
+  }
+
+  public static String encryptToString(SecretKeySpec keySpec, String plainText, byte[] aad) throws Exception {
+    byte[] ciphertext = encrypt(keySpec, plainText, aad);
     return Base64Util.encodeToString(ciphertext);
   }
 
   public static byte[] encrypt(SecretKeySpec keySpec, String plainText) throws Exception {
-    // 生成随机 nonce（12 字节）
+    return encrypt(keySpec, plainText, (byte[]) null);
+  }
+
+  public static byte[] encrypt(SecretKeySpec keySpec, String plainText, String aad) throws Exception {
+    return encrypt(keySpec, plainText, toUtf8Bytes(aad));
+  }
+
+  public static byte[] encrypt(SecretKeySpec keySpec, String plainText, byte[] aad) throws Exception {
+    validatePlainText(plainText);
+    validateAesKey(keySpec);
+
     byte[] nonce = new byte[GCM_NONCE_LENGTH];
-    new SecureRandom().nextBytes(nonce);
+    SECURE_RANDOM.nextBytes(nonce);
 
     Cipher cipher = Cipher.getInstance(TRANSFORMATION);
     GCMParameterSpec gcmSpec = new GCMParameterSpec(GCM_TAG_LENGTH, nonce);
     cipher.init(Cipher.ENCRYPT_MODE, keySpec, gcmSpec);
+    updateAad(cipher, aad);
 
     byte[] ciphertext = cipher.doFinal(plainText.getBytes(StandardCharsets.UTF_8));
-
-    // 拼接：nonce (12) + ciphertext（含 auth tag）
     byte[] combined = new byte[nonce.length + ciphertext.length];
     System.arraycopy(nonce, 0, combined, 0, nonce.length);
     System.arraycopy(ciphertext, 0, combined, nonce.length, ciphertext.length);
-
     return combined;
   }
 
-  /**
-   * AES-GCM 解密（自动提取 nonce 并验证完整性）
-   *
-   * @param base64Encrypted Base64 编码的密文（nonce + ciphertext + authTag）
-   * @param base64Key       Base64 编码的密钥
-   * @return 明文（若认证失败，抛出 AEADBadTagException）
-   */
   public static String decryptToString(String base64Encrypted, String base64Key) throws Exception {
-    byte[] ciphertext = decrypt(base64Encrypted, base64Key);
-    return new String(ciphertext, StandardCharsets.UTF_8);
+    return decryptToString(base64Encrypted, base64Key, (byte[]) null);
+  }
+
+  public static String decryptToString(String base64Encrypted, String base64Key, String aad) throws Exception {
+    return decryptToString(base64Encrypted, base64Key, toUtf8Bytes(aad));
+  }
+
+  public static String decryptToString(String base64Encrypted, String base64Key, byte[] aad) throws Exception {
+    byte[] plaintext = decrypt(base64Encrypted, base64Key, aad);
+    return new String(plaintext, StandardCharsets.UTF_8);
+  }
+
+  public static String decryptToString(SecretKeySpec keySpec, byte[] encrypted, byte[] aad) throws Exception {
+    byte[] plaintext = decrypt(keySpec, encrypted, aad);
+    return new String(plaintext, StandardCharsets.UTF_8);
   }
 
   public static byte[] decrypt(String base64Encrypted, String base64Key) throws Exception {
-    byte[] combined = Base64Util.decode(base64Encrypted);
-    byte[] keyBytes = Base64Util.decode(base64Key);
+    return decrypt(base64Encrypted, base64Key, (byte[]) null);
+  }
 
-    if (combined.length < GCM_NONCE_LENGTH) {
-      throw new IllegalArgumentException("密文太短，无法提取 nonce");
-    }
+  public static byte[] decrypt(String base64Encrypted, String base64Key, String aad) throws Exception {
+    return decrypt(base64Encrypted, base64Key, toUtf8Bytes(aad));
+  }
 
-    byte[] nonce = new byte[GCM_NONCE_LENGTH];
-    byte[] ciphertext = new byte[combined.length - GCM_NONCE_LENGTH];
-    System.arraycopy(combined, 0, nonce, 0, nonce.length);
-    System.arraycopy(combined, nonce.length, ciphertext, 0, ciphertext.length);
+  public static byte[] decrypt(String base64Encrypted, String base64Key, byte[] aad) throws Exception {
+    return decrypt(toAesKey(base64Key), Base64Util.decode(base64Encrypted), aad);
+  }
 
-    SecretKeySpec keySpec = new SecretKeySpec(keyBytes, ALGORITHM);
+  public static byte[] decrypt(SecretKeySpec keySpec, byte[] encrypted, byte[] aad) throws Exception {
+    validateAesKey(keySpec);
+    validateEncrypted(encrypted);
+
+    byte[] nonce = Arrays.copyOfRange(encrypted, 0, GCM_NONCE_LENGTH);
+    byte[] ciphertext = Arrays.copyOfRange(encrypted, GCM_NONCE_LENGTH, encrypted.length);
+
     Cipher cipher = Cipher.getInstance(TRANSFORMATION);
     GCMParameterSpec gcmSpec = new GCMParameterSpec(GCM_TAG_LENGTH, nonce);
     cipher.init(Cipher.DECRYPT_MODE, keySpec, gcmSpec);
+    updateAad(cipher, aad);
 
     return cipher.doFinal(ciphertext);
   }
 
-  // ===== 测试示例 =====
-  public static void main(String[] args) throws Exception {
-    String key = generateKeyToString(AESKeySizeEnum.K_128); // 或 256
-    System.out.println("密钥 (Base64): " + key);
-
-    String plaintext = "Sensitive data: credit card = 1234-5678-9012-3456";
-    System.out.println("明文: " + plaintext);
-
-    String encrypted = encrypt(plaintext, key);
-    System.out.println("密文 (Base64): " + encrypted);
-
-    String decrypted = decryptToString(encrypted, key);
-    System.out.println("解密后: " + decrypted);
-    System.out.println("一致: " + plaintext.equals(decrypted));
-
-    // 尝试篡改密文（会抛出异常）
-    try {
-      String tampered = encrypted.substring(0, encrypted.length() - 4) + "AAAA";
-      decrypt(tampered, key);
-    } catch (Exception e) {
-      System.out.println("✅ 篡改检测成功！解密失败（预期行为）: " + e.getClass().getSimpleName());
+  public static SecretKeySpec toAesKey(String base64Key) {
+    byte[] keyBytes = Base64Util.decode(base64Key);
+    if (!isValidAesKeyLength(keyBytes.length)) {
+      throw new IllegalArgumentException("AES key must be 16 or 32 bytes after Base64 decoding");
     }
+    return new SecretKeySpec(keyBytes, ALGORITHM);
+  }
+
+  public static void validateAesKey(SecretKeySpec keySpec) {
+    if (keySpec == null) {
+      throw new IllegalArgumentException("AES key cannot be null");
+    }
+    if (!ALGORITHM.equalsIgnoreCase(keySpec.getAlgorithm())) {
+      throw new IllegalArgumentException("Key algorithm must be AES");
+    }
+
+    byte[] keyBytes = keySpec.getEncoded();
+    if (keyBytes == null || !isValidAesKeyLength(keyBytes.length)) {
+      throw new IllegalArgumentException("AES key must be 16 or 32 bytes");
+    }
+  }
+
+  public static void validateEncrypted(byte[] encrypted) {
+    if (encrypted == null || encrypted.length < MIN_ENCRYPTED_LENGTH) {
+      throw new IllegalArgumentException("Encrypted data must contain a 12-byte nonce and 16-byte GCM tag");
+    }
+  }
+
+  private static boolean isValidAesKeyLength(int keyLength) {
+    return keyLength == AES_128_KEY_BYTES || keyLength == AES_256_KEY_BYTES;
+  }
+
+  private static void validatePlainText(String plainText) {
+    if (plainText == null) {
+      throw new IllegalArgumentException("plainText cannot be null");
+    }
+  }
+
+  private static byte[] toUtf8Bytes(String value) {
+    return value == null ? null : value.getBytes(StandardCharsets.UTF_8);
+  }
+
+  private static void updateAad(Cipher cipher, byte[] aad) {
+    if (aad != null && aad.length > 0) {
+      cipher.updateAAD(aad);
+    }
+  }
+
+  public static void main(String[] args) throws Exception {
+    String key = generateKeyToString(AESKeySizeEnum.K_128);
+    String plaintext = "Sensitive data: credit card = 1234-5678-9012-3456";
+    String aad = "demo-context";
+
+    String encrypted = encrypt(plaintext, key, aad);
+    String decrypted = decryptToString(encrypted, key, aad);
+
+    System.out.println("ciphertext (Base64): " + encrypted);
+    System.out.println("decrypted: " + decrypted);
+    System.out.println("matched: " + plaintext.equals(decrypted));
   }
 }

@@ -1,0 +1,39 @@
+{
+  "name": "fu-ids",
+  "version": "0.1.0",
+  "description": "ERP payload encryption utilities for fu-ids.",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "npm run build && node test/smoke.mjs && node test/smoke.cjs",
+    "prepack": "npm run build"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weijunfu/fu-ids.git",
+    "directory": "web"
+  },
+  "keywords": [
+    "fu-ids",
+    "aes-gcm",
+    "rsa-oaep",
+    "encryption"
+  ],
+  "author": "weijunfu",
+  "license": "Apache-2.0"
+}

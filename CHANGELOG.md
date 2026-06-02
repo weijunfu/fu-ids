@@ -1,4 +1,20 @@
 #
+
+## [1.0.28] - 2026-06-02
+
+### Add ERP 安全解决方案
++ Java
+  + ErpPayloadCryptoUtil
++ Web
+  + fuids (npmjs)
+
+### Fix 
++ 改 KeyManager：去掉内置默认 key，改为外部注入/KMS/密钥文件加载；校验 AES key 只能是 16 或 32 字节。
++ 收敛 AES 实现：EncryptedData 复用 AESUtil；增加版本、keyId、AAD；补充错误 key、篡改 nonce/tag、短密文、非法 key 长度测试。
++ 改 RSA：删除/废弃 encryptByPrivate 和 decryptByPublicKey；加密只保留公钥加密/私钥解密，并限制为包装 AES key；签名使用 sign/verify，新实现优先考虑 RSA-PSS。
++ 把 MD5 从安全章节移出或标记 @Deprecated，新增 SHA256Util / HmacSHA256Util，密码场景不要提供通用 MD5/SHA 工具，应使用 BCrypt/Argon2/PBKDF2。
+
+
 ## [1.0.27] - 2026-02-04
 
 ### Add
