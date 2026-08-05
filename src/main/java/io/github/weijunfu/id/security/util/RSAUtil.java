@@ -7,13 +7,7 @@ import javax.crypto.spec.OAEPParameterSpec;
 import javax.crypto.spec.PSource;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
-import java.security.KeyFactory;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.SecureRandom;
-import java.security.Signature;
+import java.security.*;
 import java.security.spec.MGF1ParameterSpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.PSSParameterSpec;
@@ -76,6 +70,22 @@ public final class RSAUtil {
     String publicKey = Base64Util.encodeToString(keyPair.getPublic().getEncoded());
     String privateKey = Base64Util.encodeToString(keyPair.getPrivate().getEncoded());
     return new String[]{publicKey, privateKey};
+  }
+
+  public static byte[][] generateByteKeyPair() throws NoSuchAlgorithmException {
+    return generateByteKeyPair(DEFAULT_KEY_SIZE);
+  }
+
+  public static byte[][] generateByteKeyPair(int keySize) throws NoSuchAlgorithmException {
+    if (keySize < MIN_KEY_SIZE) {
+      throw new IllegalArgumentException("RSA key size must be at least 2048 bits");
+    }
+
+    KeyPairGenerator keyGen = KeyPairGenerator.getInstance(KEY_ALGORITHM);
+    keyGen.initialize(keySize, SECURE_RANDOM);
+    KeyPair keyPair = keyGen.generateKeyPair();
+
+    return new byte[][]{keyPair.getPublic().getEncoded(), keyPair.getPrivate().getEncoded()};
   }
 
   /**

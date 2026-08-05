@@ -2,12 +2,30 @@ package io.github.weijunfu.id.security.util;
 
 import javax.crypto.AEADBadTagException;
 
+import io.github.weijunfu.id.util.RsaKeyPrint;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ErpPayloadCryptoUtilTest {
+
+  @Test
+  void genRsaKeys() throws Exception {
+    byte[][] rsaKeys = RSAUtil.generateByteKeyPair();
+
+    if(rsaKeys.length != 2) {
+      System.err.println("生成RSA密钥对失败");
+      return;
+    }
+
+    String publicKey = RsaKeyPrint.toPublicPem(rsaKeys[0]);
+    System.out.println(publicKey);
+    System.out.println("====================================");
+    String privateKey = RsaKeyPrint.toPrivatePem(rsaKeys[1]);
+    System.out.println(privateKey);
+  }
+
 
   @Test
   void encryptsRequestAndResponseWithDerivedDirectionalKeys() throws Exception {

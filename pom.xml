@@ -4,30 +4,44 @@
 
   <groupId>io.github.weijunfu</groupId>
   <artifactId>fu-ids</artifactId>
-  <version>1.0.28</version>
+  <version>1.0.29</version>
   <packaging>jar</packaging>
 
-  <name>fu-ids</name>
-  <description>A lightweight ID generation solution</description>
+  <name>Fu IDs</name>
+  <description>Lightweight Java utilities for Hashids and Snowflake identifiers, Jackson JSON serialization, amount formatting, tree building, URL slugs, and crypto helpers.</description>
   <url>https://github.com/weijunfu/fu-ids</url>
+  <inceptionYear>2025</inceptionYear>
+
+  <organization>
+    <name>weijunfu</name>
+    <url>https://github.com/weijunfu</url>
+  </organization>
 
   <licenses>
     <license>
       <name>The Apache License, Version 2.0</name>
-      <url>https://github.com/weijunfu/fu-ids/blob/main/LICENSE-2.0.txt</url>
+      <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
     </license>
   </licenses>
 
   <developers>
     <developer>
+      <id>weijunfu</id>
       <name>weijunfu</name>
       <email>ijunfu@163.com</email>
+      <url>https://github.com/weijunfu</url>
     </developer>
   </developers>
 
+  <issueManagement>
+    <system>GitHub Issues</system>
+    <url>https://github.com/weijunfu/fu-ids/issues</url>
+  </issueManagement>
+
   <scm>
-    <connection>scm:git:git://github.com/weijunfu/fu-ids.git</connection>
-    <developerConnection>scm:git:ssh://github.com/weijunfu/fu-ids.git</developerConnection>
+    <connection>scm:git:https://github.com/weijunfu/fu-ids.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/weijunfu/fu-ids.git</developerConnection>
     <url>https://github.com/weijunfu/fu-ids</url>
   </scm>
 
@@ -46,9 +60,23 @@
     <java.version>17</java.version>
     <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <jackson.version>2.20.0</jackson.version>
+    <jackson.version>2.22.1</jackson.version>
     <slf4j.version>2.0.17</slf4j.version>
+    <junit.jupiter.version>5.13.4</junit.jupiter.version>
+    <keywords>id,identifier,hashids,snowflake,jackson,json,serialization,encryption,tree,url</keywords>
   </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.fasterxml.jackson</groupId>
+        <artifactId>jackson-bom</artifactId>
+        <version>${jackson.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <dependencies>
     <dependency>
@@ -60,35 +88,32 @@
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-simple</artifactId>
       <version>${slf4j.version}</version>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
-      <version>2.20</version>
     </dependency>
 
     <dependency>
       <groupId>com.fasterxml.jackson.datatype</groupId>
       <artifactId>jackson-datatype-jsr310</artifactId>
-      <version>${jackson.version}</version>
     </dependency>
 
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
-      <version>${jackson.version}</version>
     </dependency>
 
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
-      <version>${jackson.version}</version>
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-api</artifactId>
-      <version>5.13.4</version>
+      <artifactId>junit-jupiter</artifactId>
+      <version>${junit.jupiter.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
