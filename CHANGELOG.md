@@ -1,6 +1,14 @@
 #
 
-## [1.0.19] - 2026-08-05
+## [1.0.30] - 2026-08-06
+
+### Add
++ Snowflake 支持 application.yml / application.yaml 配置文件
+
+### fix log
++ Snowflake 不会再因为缺少 application.properties 反复输出warn
+
+## [1.0.29] - 2026-08-05
 
 ### fix 安全问题
 

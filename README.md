@@ -109,11 +109,27 @@ Snowflake snowflake = IdUtil.getSnowflake(1, 5, 1609459200000L);
 ```
 
 文件配置
-```properties
-fu-ids.snowflake.epoch=1609459200000L   # 起始时间戳（2021-01-01 00:00:00 UTC）
-fu-ids.snowflake.workerId=1             #工作节点ID
-fu-ids.snowflake.datacenterId=1         # 数据中心ID
+
+`application.yml` / `application.yaml`
+```yaml
+fu-ids:
+  snowflake:
+    epoch: 1609459200000L   # 起始时间戳（2021-01-01 00:00:00 UTC）
+    workerId: 1             # 工作节点ID，也支持 worker-id
+    datacenterId: 1         # 数据中心ID，也支持 datacenter-id
 ```
+
+`application.properties`
+```properties
+# 起始时间戳（2021-01-01 00:00:00 UTC）
+fu-ids.snowflake.epoch=1609459200000L
+# 工作节点ID
+fu-ids.snowflake.workerId=1
+# 数据中心ID
+fu-ids.snowflake.datacenterId=1
+```
+
+如果多个配置文件同时存在，同名配置以 `application.properties` 为准。
 
 ### 兼容性哈希（非安全）
 
