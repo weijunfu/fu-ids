@@ -98,38 +98,37 @@ public class Amount implements Serializable {
 ### 5. 雪花算法
 
 ```java
-// 从配置中读取值，否则使用默认值
+// 默认 workerId=1、datacenterId=1、epoch=1609459200000L
 Snowflake snowflake = IdUtil.getSnowflake();
 
-// 自定义机器码、数据中心码，从配置中读取起始时间戳
+// 自定义机器码、数据中心码，epoch 使用默认值
 Snowflake snowflake = IdUtil.getSnowflake(1, 5);
 
 // 自定义机器码、数据中心码、起始时间戳
-Snowflake snowflake = IdUtil.getSnowflake(1, 5, 1609459200000L);
+Snowflake snowflake = new Snowflake(1, 5, 1609459200000L);
 ```
 
-文件配置
+Snowflake 不读取 `application.yml`、`application.yaml` 或 `application.properties`。需要修改节点参数时，请通过构造函数显式传入。
 
-`application.yml` / `application.yaml`
-```yaml
-fu-ids:
-  snowflake:
-    epoch: 1609459200000L   # 起始时间戳（2021-01-01 00:00:00 UTC）
-    workerId: 1             # 工作节点ID，也支持 worker-id
-    datacenterId: 1         # 数据中心ID，也支持 datacenter-id
+### 6. Nano ID
+
+Nano ID 使用 `SecureRandom` 生成不可预测的 URL 安全字符串。默认长度为 21，包含约 126 bit 随机性。
+
+```java
+// 默认生成 21 位 URL 安全 ID
+String id = IdUtil.getNanoId();
+
+// 指定长度
+String shortId = IdUtil.getNanoId(12);
+
+// 自定义字母表和长度
+String hexId = IdUtil.getNanoId("0123456789abcdef", 16);
+
+// 也可以直接调用 NanoId
+String directId = NanoId.randomNanoId();
 ```
 
-`application.properties`
-```properties
-# 起始时间戳（2021-01-01 00:00:00 UTC）
-fu-ids.snowflake.epoch=1609459200000L
-# 工作节点ID
-fu-ids.snowflake.workerId=1
-# 数据中心ID
-fu-ids.snowflake.datacenterId=1
-```
-
-如果多个配置文件同时存在，同名配置以 `application.properties` 为准。
+自定义字母表必须包含 1 至 256 个不重复字符。实现使用拒绝采样，避免直接取模造成字符分布不均。
 
 ### 兼容性哈希（非安全）
 

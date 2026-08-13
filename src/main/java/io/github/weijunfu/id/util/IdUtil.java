@@ -51,7 +51,7 @@ public class IdUtil {
    * 使用默认workerId 和 datacenterId 创建 Snowflake
    */
   public static Snowflake getSnowflake() {
-    return new Snowflake(1, 1);
+    return new Snowflake();
   }
 
   /**
@@ -59,6 +59,32 @@ public class IdUtil {
    */
   public static long getSnowflakeNextId() {
     return getSnowflake().nextId();
+  }
+
+  /**
+   * 使用默认配置生成 Nano ID
+   */
+  public static String getNanoId() {
+    return NanoId.randomNanoId();
+  }
+
+  /**
+   * 使用默认字母表生成指定长度的 Nano ID
+   *
+   * @param size ID 长度
+   */
+  public static String getNanoId(int size) {
+    return NanoId.randomNanoId(size);
+  }
+
+  /**
+   * 使用自定义字母表和长度生成 Nano ID
+   *
+   * @param alphabet 自定义字母表
+   * @param size     ID 长度
+   */
+  public static String getNanoId(String alphabet, int size) {
+    return NanoId.randomNanoId(alphabet, size);
   }
 
 }
