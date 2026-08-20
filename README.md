@@ -98,7 +98,7 @@ public class Amount implements Serializable {
 ### 5. 雪花算法
 
 ```java
-// 默认 workerId=1、datacenterId=1、epoch=1609459200000L
+// 获取线程安全的默认单例：workerId=1、datacenterId=1、epoch=1609459200000L
 Snowflake snowflake = IdUtil.getSnowflake();
 
 // 自定义机器码、数据中心码，epoch 使用默认值
@@ -108,7 +108,8 @@ Snowflake snowflake = IdUtil.getSnowflake(1, 5);
 Snowflake snowflake = new Snowflake(1, 5, 1609459200000L);
 ```
 
-Snowflake 不读取 `application.yml`、`application.yaml` 或 `application.properties`。需要修改节点参数时，请通过构造函数显式传入。
+默认配置通过 `Snowflake.getInstance()` 延迟初始化为单例，`IdUtil.getSnowflake()` 和 `IdUtil.getSnowflakeNextId()` 均复用该实例。
+Snowflake 不读取 `application.yml`、`application.yaml` 或 `application.properties`。需要修改节点参数时，请通过构造函数显式传入并复用同一实例。
 
 ### 6. Nano ID
 

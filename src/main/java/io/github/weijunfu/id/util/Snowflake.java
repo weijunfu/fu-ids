@@ -27,10 +27,19 @@ public class Snowflake {
   private long lastTimestamp = -1L;
 
   /**
-   * 使用默认 workerId、datacenterId 和 epoch 创建生成器。
+   * 使用默认 workerId、datacenterId 和 epoch 创建单例生成器。
    */
-  public Snowflake() {
+  private Snowflake() {
     this(DEFAULT_WORKER_ID, DEFAULT_DATACENTER_ID, DEFAULT_EPOCH);
+  }
+
+  /**
+   * 获取使用默认配置的 Snowflake 单例。
+   *
+   * @return 默认 Snowflake 单例
+   */
+  public static Snowflake getInstance() {
+    return SingletonHolder.INSTANCE;
   }
 
   /**
@@ -124,6 +133,11 @@ public class Snowflake {
    */
   protected long timeGen() {
     return System.currentTimeMillis();
+  }
+
+  private static class SingletonHolder {
+
+    private static final Snowflake INSTANCE = new Snowflake();
   }
 
   // =================== 测试用例 ===================

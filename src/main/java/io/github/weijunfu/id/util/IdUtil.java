@@ -48,10 +48,10 @@ public class IdUtil {
   }
 
   /**
-   * 使用默认workerId 和 datacenterId 创建 Snowflake
+   * 获取使用默认 workerId 和 datacenterId 的 Snowflake 单例
    */
   public static Snowflake getSnowflake() {
-    return new Snowflake();
+    return Snowflake.getInstance();
   }
 
   /**

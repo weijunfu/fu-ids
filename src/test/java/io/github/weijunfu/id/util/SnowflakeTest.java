@@ -2,7 +2,12 @@ package io.github.weijunfu.id.util;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.IntStream;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 class SnowflakeTest {
 
@@ -10,10 +15,22 @@ class SnowflakeTest {
   private static final long TEST_TIMESTAMP = DEFAULT_EPOCH + 1000L;
 
   @Test
-  void defaultConstructorUsesFixedDefaults() {
-    Snowflake snowflake = new FixedTimeSnowflake();
+  void defaultConfigurationUsesSingleton() {
+    Snowflake snowflake = Snowflake.getInstance();
 
-    assertEquals(expectedId(1L, 1L, DEFAULT_EPOCH), snowflake.nextId());
+    assertSame(snowflake, Snowflake.getInstance());
+    assertSame(snowflake, IdUtil.getSnowflake());
+  }
+
+  @Test
+  void defaultSingletonGeneratesUniqueIdsConcurrently() {
+    int total = 10_000;
+    Set<Long> ids = ConcurrentHashMap.newKeySet();
+
+    IntStream.range(0, total).parallel()
+        .forEach(ignored -> ids.add(IdUtil.getSnowflakeNextId()));
+
+    assertEquals(total, ids.size());
   }
 
   @Test
@@ -38,10 +55,6 @@ class SnowflakeTest {
   }
 
   private static final class FixedTimeSnowflake extends Snowflake {
-
-    private FixedTimeSnowflake() {
-      super();
-    }
 
     private FixedTimeSnowflake(long workerId, long datacenterId) {
       super(workerId, datacenterId);
