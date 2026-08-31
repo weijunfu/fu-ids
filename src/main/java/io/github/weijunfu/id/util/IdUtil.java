@@ -1,5 +1,6 @@
 package io.github.weijunfu.id.util;
 
+import io.github.weijunfu.nanoid.NanoId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

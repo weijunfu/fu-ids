@@ -125,7 +125,7 @@ String shortId = IdUtil.getNanoId(12);
 // 自定义字母表和长度
 String hexId = IdUtil.getNanoId("0123456789abcdef", 16);
 
-// 也可以直接调用 NanoId
+// 也可以通过 io.github.weijunfu.nanoid.NanoId 直接调用
 String directId = NanoId.randomNanoId();
 ```
 
@@ -206,3 +206,8 @@ FuTree.buildTree(
         }
 );
 ```
+
+## 许可证
+
+本项目依据 [PolyForm Noncommercial License 1.0.0](LICENSE.md) 提供，仅允许该许可证定义的非商业用途。
+商业用途必须事先取得单独书面许可，具体参见 [商业授权说明](COMMERCIAL-LICENSE.md)。

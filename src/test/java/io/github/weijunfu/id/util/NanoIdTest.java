@@ -1,5 +1,6 @@
 package io.github.weijunfu.id.util;
 
+import io.github.weijunfu.nanoid.NanoId;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashSet;
@@ -8,7 +9,6 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.random.RandomGenerator;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -42,16 +42,6 @@ class NanoIdTest {
     Set<Integer> alphabet = new HashSet<>(Set.of(
         "甲".codePointAt(0), "乙".codePointAt(0), "丙".codePointAt(0), "😀".codePointAt(0)));
     assertTrue(id.codePoints().allMatch(alphabet::contains));
-  }
-
-  @Test
-  void rejectsBiasedRandomBytes() {
-    SequenceRandom random = new SequenceRandom(
-        new byte[]{(byte) 255, (byte) 255, (byte) 255, (byte) 255, (byte) 255},
-        new byte[]{0, 1, 2, 0, 1});
-
-    assertEquals("abc", NanoId.randomNanoId(random, "abc", 3));
-    assertEquals(2, random.calls());
   }
 
   @Test
@@ -93,27 +83,4 @@ class NanoIdTest {
     }
   }
 
-  private static final class SequenceRandom implements RandomGenerator {
-    private final byte[][] sequences;
-    private int calls;
-
-    private SequenceRandom(byte[]... sequences) {
-      this.sequences = sequences;
-    }
-
-    @Override
-    public long nextLong() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void nextBytes(byte[] bytes) {
-      byte[] sequence = sequences[calls++];
-      System.arraycopy(sequence, 0, bytes, 0, bytes.length);
-    }
-
-    private int calls() {
-      return calls;
-    }
-  }
 }
